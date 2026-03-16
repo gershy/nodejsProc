@@ -15,12 +15,12 @@ export type ProcOpts = {
   bufferOutput?: boolean,
   env?: Obj<string> | NodeJS.ProcessEnv,
   args?: Obj<string>,
-  onInput?: (type: 'init' | 'out' | 'err', data: string) => Promise<null | string>
+  onData?: (type: 'init' | 'out' | 'err', data: string) => Promise<null | string>
 };
 export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
 
   // Note that `timeoutMs` counts since the most recent chunk
-  const { cwd, timeoutMs=30 * 1000, bufferOutput=true, env={}, args={}, onInput=null } = opts ?? {};
+  const { cwd, timeoutMs=30 * 1000, bufferOutput=true, env={}, args={}, onData=null } = opts ?? {};
   const err = Error('');
   
   const reg = /[^'"\s]+|"[^"]*"|'[^']*'/g;
@@ -41,7 +41,7 @@ export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
   });
   
   const state = {
-    onInput,
+    onData,
     lastChunk: null as null | Buffer,
     timeout:   null as any
   };
@@ -53,8 +53,8 @@ export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
     cwd: path.join(...cwd.fp.cmps)
   });
   
-  // Allow `onInput` to perform input immediately
-  state.onInput?.('init', '').then(result => (result !== null) && proc.stdin.write(result));
+  // Allow `onData` to perform input immediately
+  state.onData?.('init', '').then(result => (result !== null) && proc.stdin.write(result));
   
   const stdoutChunks = [];
   const stderrChunks = [];
@@ -77,18 +77,18 @@ export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
     
     if (bufferOutput) chunks.push(data);
     
-    if (state.onInput) (async () => {
+    if (state.onData) (async () => {
       
       for (const rawLn of data.toString('utf8').split(/[\r]?[\n]/)) {
         
-        // `state.onInput` may get set to `null` asynchronously
-        if (!state.onInput) break;
+        // `state.onData` may get set to `null` asynchronously
+        if (!state.onData) break;
         
-        const ln = rawLn.trimEnd();
+        const ln = stripAnsi(rawLn.trimEnd());
         if (!ln) continue; // Always ignore whitespace-only lines??
         
         try {
-          const result = await state.onInput(type, ln);
+          const result = await state.onData(type, ln);
           if (result !== null) proc.stdin.write(result);
         } catch(err) {
           proc.kill();
@@ -115,7 +115,7 @@ export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
   const closure = () => {
     
     clearTimeout(state.timeout);
-    state.onInput = null;
+    state.onData = null;
     proc.stdout.removeListener('data', handleStdoutChunk);
     proc.stderr.removeListener('data', handleStderrChunk);
     
