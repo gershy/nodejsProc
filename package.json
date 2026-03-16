@@ -1,6 +1,6 @@
 {
   "name": "@gershy/nodejs-proc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "TODO",
   "keywords": [
     "TODO"
@@ -23,7 +23,9 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@gershy/disk": "^0.0.10"
+  },
   "type": "module",
   "files": [
     "cmp"
