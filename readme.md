@@ -9,6 +9,10 @@ const repoHasChanges = await proc('git status', { cwd: '/path/to/my/repo' }).the
 });
 ```
 
+## Proc Current Working Directory
+- Default current-working-directory is filesystem root (careful with `proc('rm -rf')`!!)
+
+## Proc Environment Vars
 By default `process.env` is passed to `proc`. To control the environment vars, use:
 ```ts
 await proc('my command', { env: { ENV_VAR: 'custom env var' } });

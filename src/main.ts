@@ -10,17 +10,17 @@ type RunInShellResultStrs = { stdout: string, stderr: string, output: string, ov
 type RunInShellReturnValue = Promise<RunInShellResultStrs> & { proc: ChildProcessWithoutNullStreams, rawShellStr: string };
 
 export type ProcOpts = {
-  cwd: DiskFact,
+  cwd?: DiskFact,
   timeoutMs?: number,
   bufferOutput?: boolean,
   env?: Obj<string> | NodeJS.ProcessEnv,
   args?: Obj<string>,
   onData?: (type: 'init' | 'out' | 'err', data: string) => Promise<null | string>
 };
-export default (cmd: string, opts: ProcOpts): RunInShellReturnValue => {
+export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
 
   // Note that `timeoutMs` counts since the most recent chunk
-  const { cwd, timeoutMs=30 * 1000, bufferOutput=true, env={}, args={}, onData=null } = opts ?? {};
+  const { cwd=rootFact, timeoutMs=30 * 1000, bufferOutput=true, env=process.env, args={}, onData=null } = opts ?? {};
   const err = Error('');
   
   const reg = /[^'"\s]+|"[^"]*"|'[^']*'/g;
