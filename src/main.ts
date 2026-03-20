@@ -1,13 +1,22 @@
+import '@gershy/clearing';
 import path from 'node:path';
 import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
-import { skip, then } from '@gershy/clearing';
 import { rootFact } from '@gershy/disk';
 type DiskFact = typeof rootFact;
 
+const { skip, then } = clearing;
 const stripAnsi = (str: string) => str.replace(/\u001B\[[0-9]+m/g, ''); // Removes ansi
 
 type RunInShellResultStrs = { stdout: string, stderr: string, output: string, overview: string };
 type RunInShellReturnValue = Promise<RunInShellResultStrs> & { proc: ChildProcessWithoutNullStreams, rawShellStr: string };
+
+const mod:      typeof cl.mod      = cl.mod;
+const suppress: typeof cl.suppress = cl.suppress;
+const indent:   typeof cl.indent   = cl.indent;
+const map:      typeof cl.map      = cl.map;
+const hasHead:  typeof cl.hasHead  = cl.hasHead;
+const hasTail:  typeof cl.hasTail  = cl.hasTail;
+const has:      typeof cl.has      = cl.has;
 
 export type ProcOpts = {
   cwd?: DiskFact,
@@ -157,7 +166,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     proc,
     terminate: async () => {
       const signalSent = proc.kill();
-      if (!signalSent) throw Error('process kill failed')[mod]({ pid: proc.pid ?? '<unknown>' });
+      if (!signalSent) throw Error('process kill failed')[cl.mod]({ pid: proc.pid ?? '<unknown>' });
       return prm;
     },
     rawShellStr
