@@ -77,7 +77,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     : () => { /* infinite timeout */ };
   resetTimeout();
   
-  const handleChunk = (type: 'out' | 'err', chunks: Buffer[], data: Buffer) => {
+  const handleChunk = (type: null | 'out' | 'err', chunks: Buffer[], data: Buffer) => {
     
     state.lastChunk = data;
     
@@ -86,7 +86,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     
     if (bufferOutput) chunks.push(data);
     
-    if (state.onData) (async () => {
+    if (state.onData && type) (async () => {
       
       for (const rawLn of data.toString('utf8').split(/[\r]?[\n]/)) {
         
@@ -112,7 +112,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
   
   const handleStdoutChunk = handleChunk.bind(null, 'out', stdoutChunks);
   const handleStderrChunk = handleChunk.bind(null, 'err', stderrChunks);
-  const handleOutputChunk = handleChunk.bind(null, 'err', outputChunks);
+  const handleOutputChunk = handleChunk.bind(null, null,  outputChunks);
   proc.stdout.on('data', handleStdoutChunk); // Pure stdout
   proc.stderr.on('data', handleStderrChunk); // Pure stderr
   
