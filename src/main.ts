@@ -1,10 +1,10 @@
 import '@gershy/clearing';
 import path from 'node:path';
-import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { rootFact } from '@gershy/disk';
 type DiskFact = typeof rootFact;
 
-const { skip, then } = clearing;
+const { skip } = clearing;
 const stripAnsi = (str: string) => str.replace(/\u001B\[[0-9]+m/g, ''); // Removes ansi
 
 type RunInShellResultStrs = { stdout: string, stderr: string, output: string, overview: string };
