@@ -7,12 +7,11 @@ type DiskFact = typeof rootFact;
 const { skip } = clearing;
 const stripAnsi = (str: string) => str.replace(/\u001B\[[0-9]+m/g, ''); // Removes ansi
 
-type RunInShellResultStrs = { stdout: string, stderr: string, output: string, overview: string };
+type RunInShellResultStrs = { cmd: string, code: number, output: string };
 type RunInShellReturnValue = Promise<RunInShellResultStrs> & { proc: ChildProcessWithoutNullStreams, rawShellStr: string };
 
 const mod:      typeof cl.mod      = cl.mod;
 const suppress: typeof cl.suppress = cl.suppress;
-const indent:   typeof cl.indent   = cl.indent;
 const map:      typeof cl.map      = cl.map;
 const hasHead:  typeof cl.hasHead  = cl.hasHead;
 const hasTail:  typeof cl.hasTail  = cl.hasTail;
@@ -24,7 +23,9 @@ export type ProcOpts = {
   bufferOutput?: boolean,
   env?: Obj<string> | NodeJS.ProcessEnv,
   args?: Obj<string>,
-  onData?: (type: 'init' | 'out' | 'err', data: string) => Promise<null | string>
+  
+  // Process data line-by-line; return strings to send them to the child process' stdout!
+  onData?: (type: 'init' | 'line', data: string) => Promise<null | string>
 };
 export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
 
@@ -65,8 +66,6 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
   // Allow `onData` to perform input immediately
   state.onData?.('init', '').then(result => (result !== null) && proc.stdin.write(result));
   
-  const stdoutChunks = [];
-  const stderrChunks = [];
   const outputChunks = []; // The "entire" output; stdout interleaved with stderr
   const timeoutFn = () => {
     proc.kill();
@@ -77,7 +76,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     : () => { /* infinite timeout */ };
   resetTimeout();
   
-  const handleChunk = (type: null | 'out' | 'err', chunks: Buffer[], data: Buffer) => {
+  const handleChunk = (type: null | 'line', chunks: Buffer[], data: Buffer) => {
     
     state.lastChunk = data;
     
@@ -90,14 +89,12 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
       
       for (const rawLn of data.toString('utf8').split(/[\r]?[\n]/)) {
         
-        // `state.onData` may get set to `null` asynchronously
-        if (!state.onData) break;
-        
         const ln = stripAnsi(rawLn.trimEnd());
         if (!ln) continue; // Always ignore whitespace-only lines??
         
         try {
-          const result = await state.onData(type, ln);
+          // Typescript thinks `state.onData` could get set to `null` asynchronously
+          const result = await state.onData!(type, ln);
           if (result !== null) proc.stdin.write(result);
         } catch(err) {
           proc.kill();
@@ -110,13 +107,8 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     
   };
   
-  const handleStdoutChunk = handleChunk.bind(null, 'out', stdoutChunks);
-  const handleStderrChunk = handleChunk.bind(null, 'err', stderrChunks);
-  const handleOutputChunk = handleChunk.bind(null, null,  outputChunks);
-  proc.stdout.on('data', handleStdoutChunk); // Pure stdout
-  proc.stderr.on('data', handleStderrChunk); // Pure stderr
-  
   // "output" consists of stdout interleaved with stderr in the same order chunks were received
+  const handleOutputChunk = handleChunk.bind(null, 'line', outputChunks);
   proc.stdout.on('data', handleOutputChunk);
   proc.stderr.on('data', handleOutputChunk);
   
@@ -125,15 +117,13 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     
     clearTimeout(state.timeout);
     state.onData = null;
-    proc.stdout.removeListener('data', handleStdoutChunk);
-    proc.stderr.removeListener('data', handleStderrChunk);
+    proc.stdout.removeListener('data', handleOutputChunk);
+    proc.stderr.removeListener('data', handleOutputChunk);
     
-    const stdout = stripAnsi(Buffer.concat(stdoutChunks).toString('utf8'));
-    const stderr = stripAnsi(Buffer.concat(stderrChunks).toString('utf8'));
     const output = stripAnsi(Buffer.concat(outputChunks).toString('utf8').trim());
     
-    const overview = `> ${rawShellStr}\n${output[indent](`[${shellName}] `)}`
-    return { stdout, stderr, output, overview };
+    // const overview = `> ${rawShellStr}\n${output[indent](`[${shellName}] `)}`
+    return { cmd: rawShellStr, output };
     
   };
   
@@ -146,17 +136,10 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
       
     });
     
-    proc.on('close', exitCode => {
+    proc.on('close', (code, signal) => {
       
-      if (exitCode === 0) resolve(closure());
-      else                reject(err[mod]({ msg: `Proc "${rawShellStr}" failed (${exitCode})`, exitCode, ...closure() }));
-      
-    });
-    
-    proc.on('exit', (exitCode, signal) => {
-      
-      if (exitCode === 0) resolve(closure());
-      else                reject(err[mod]({ msg: `Proc "${rawShellStr}" failed (${exitCode})`, exitCode, signal, ...closure() }));
+      if (code === 0) resolve({ code, ...closure() });
+      else            reject(err[mod]({ msg: `Proc "${rawShellStr}" failed (${code})`, code, signal, ...closure() }));
       
     });
     
