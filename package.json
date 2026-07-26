@@ -1,6 +1,6 @@
 {
   "name": "@gershy/nodejs-proc",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "author": "Gershom Maes",
   "description": "TODO",
   "keywords": [
@@ -20,13 +20,13 @@
   ],
   "license": "ISC",
   "peerDependencies": {
-    "@gershy/clearing": "^0.0.50"
+    "@gershy/clearing": "^0.0.51"
   },
   "devDependencies": {
     "@types/node": "^24.10.1"
   },
   "dependencies": {
-    "@gershy/disk": "^0.0.32"
+    "@gershy/disk": "^0.0.33"
   },
   "exports": {
     ".": {
