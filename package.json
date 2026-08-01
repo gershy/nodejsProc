@@ -1,6 +1,6 @@
 {
   "name": "@gershy/nodejs-proc",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "author": "Gershom Maes",
   "description": "TODO",
   "keywords": [
@@ -8,25 +8,25 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gershy/nodejsProc.git"
+    "url": "git+https://github.com/gershyNpm/nodejsProc.git"
   },
   "bugs": {
-    "url": "https://github.com/gershy/nodejsProc/issues"
+    "url": "https://github.com/gershyNpm/nodejsProc/issues"
   },
-  "homepage": "https://github.com/gershy/nodejsProc#readme",
+  "homepage": "https://github.com/gershyNpm/nodejsProc#readme",
   "type": "module",
   "files": [
     "cmp"
   ],
   "license": "ISC",
   "peerDependencies": {
-    "@gershy/clearing": "^0.0.51"
+    "@gershy/clearing": "^0.0.52"
   },
   "devDependencies": {
     "@types/node": "^24.10.1"
   },
   "dependencies": {
-    "@gershy/disk": "^0.0.34"
+    "@gershy/disk": "^0.0.35"
   },
   "exports": {
     ".": {
