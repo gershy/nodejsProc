@@ -1,5 +1,4 @@
 import '@gershy/clearing';
-import path from 'node:path';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { rootFact } from '@gershy/disk';
 type DiskFact = typeof rootFact;
@@ -60,7 +59,7 @@ export default (cmd: string, opts?: ProcOpts): RunInShellReturnValue => {
     shell: true,
     detached: false,
     env,
-    cwd: path.join(...cwd.fp.cmps)
+    cwd: cwd.fsp()
   });
   
   // Allow `onData` to perform input immediately
